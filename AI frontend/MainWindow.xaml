@@ -12,6 +12,7 @@
                 <ResourceDictionary Source="Style.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <local:MessageAlignmentConverter x:Key="MessageAlignmentConverter"/>
+            <local:MessageHorizontalAlignmentConverter x:Key="MessageHorizontalAlignmentConverter"/>
             <local:MessageBackgroundConverter x:Key="MessageBackgroundConverter"/>
         </ResourceDictionary>
     </Window.Resources>
@@ -37,15 +38,47 @@
         <!-- Chat Area -->
         <Grid Grid.Row="1" Margin="20,10,20,10">
             <Border Style="{StaticResource ChatListBoxBorderStyle}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-                <ListBox x:Name="ConversationListBox" Margin="10,10,10,10" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="{Binding IsUser, Converter={StaticResource MessageBackgroundConverter}}" CornerRadius="10" Padding="8" Margin="5">
-                                <TextBlock Text="{Binding Text}" TextAlignment="{Binding IsUser, Converter={StaticResource MessageAlignmentConverter}}"/>
-                            </Border>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                <ScrollViewer x:Name="ChatScrollViewer" 
+                              VerticalScrollBarVisibility="Auto" 
+                              HorizontalScrollBarVisibility="Disabled"
+                              CanContentScroll="False"
+                              Margin="10">
+                    <ItemsControl x:Name="ConversationListBox" 
+                                  ScrollViewer.CanContentScroll="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <!-- Container for message alignment -->
+                                <Grid Margin="5">
+                                    <Border Background="{Binding IsUser, Converter={StaticResource MessageBackgroundConverter}}" 
+                                            CornerRadius="10" 
+                                            Padding="8" 
+                                            MaxWidth="600"
+                                            MinWidth="100"
+                                            HorizontalAlignment="{Binding IsUser, Converter={StaticResource MessageHorizontalAlignmentConverter}}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Text}" 
+                                                       TextWrapping="Wrap"
+                                                       TextAlignment="{Binding IsUser, Converter={StaticResource MessageAlignmentConverter}}"/>
+                                            <!-- File attachments display -->
+                                            <ItemsControl ItemsSource="{Binding AttachedFiles}" Margin="0,5,0,0">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Background="#E3F2FD" CornerRadius="5" Padding="5" Margin="2">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="📎" FontSize="14" Margin="0,0,5,0"/>
+                                                                <TextBlock Text="{Binding}" FontSize="12" FontStyle="Italic" TextWrapping="Wrap"/>
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
             </Border>
             <Border x:Name="TypingBubble"
                     Background="#E3F2FD"
@@ -67,12 +100,53 @@
         <!-- Input Area -->
         <Border Grid.Row="2" Background="White" CornerRadius="10" Padding="10" Margin="20,0,20,20">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBox x:Name="UserInputTextBox" Grid.Column="0" Height="30" Margin="0,0,10,0" KeyDown="UserInputTextBox_KeyDown" Style="{StaticResource ChatTextBoxStyle}" HorizontalAlignment="Stretch"/>
-                <Button x:Name="SubmitButton" Grid.Column="1" Content="Send" Click="SubmitButton_Click" Style="{StaticResource SendButtonStyle}"/>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Attached files display -->
+                <ListBox x:Name="AttachedFilesListBox" Grid.Row="0" MaxHeight="80" Margin="0,0,0,5" 
+                         Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         Visibility="Collapsed">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#E3F2FD" CornerRadius="5" Padding="5" Margin="2">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📎" FontSize="12" Margin="0,0,3,0"/>
+                                    <TextBlock Text="{Binding Name}" FontSize="11" MaxWidth="100" TextTrimming="CharacterEllipsis"/>
+                                    <Button Content="✕" FontSize="10" Width="16" Height="16" Margin="3,0,0,0" 
+                                            Background="Transparent" BorderThickness="0" Foreground="Red"
+                                            Click="RemoveFileButton_Click" Tag="{Binding}"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <!-- Input controls -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Background="#E3F2FD" BorderThickness="1" BorderBrush="#90CAF9" 
+                            CornerRadius="5" Width="40" Height="40" Margin="0,0,10,0">
+                        <Button x:Name="AttachFileButton" Content="📎" Background="Transparent" BorderThickness="0"
+                                Click="AttachFileButton_Click"/>
+                    </Border>
+                    <TextBox x:Name="UserInputTextBox" Grid.Column="1" Height="40" Margin="0,0,10,0" 
+                             KeyDown="UserInputTextBox_KeyDown" Style="{StaticResource ChatTextBoxStyle}" 
+                             HorizontalAlignment="Stretch" VerticalContentAlignment="Center"/>
+                    <Button x:Name="SubmitButton" Grid.Column="2" Content="Send" Click="SubmitButton_Click" 
+                            Style="{StaticResource SendButtonStyle}"/>
+                </Grid>
             </Grid>
         </Border>
     </Grid>
